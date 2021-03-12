@@ -242,6 +242,34 @@ int ClearPathMotorSD::calcSteps()
                 
                // _AX = 10; //2 * (_decelDistance - (_VX * 2)) / (2*2); //_AXMX;
                 
+                if(_direction){
+                    if(AbsPosition + decelAbsDistance > maxAbsPosition){
+            //            TargetPosnQx = labs(maxAbsPosition - AbsPosition)<<fractionalBits;
+                        decelDistanceQx = labs(maxAbsPosition - AbsPosition)<<fractionalBits;
+            //            Serial.print(">>> maxPosnQx ");
+            //            Serial.print(decelDistanceQx);
+            //            Serial.println(); 
+                    } else {
+            //            TargetPosnQx = MovePosnQx + decelDistanceQx;
+                        decelDistanceQx = decelAbsDistance<<fractionalBits;
+                    }
+                }
+                else{
+                    if(AbsPosition - decelAbsDistance < minAbsPosition){
+            //            TargetPosnQx = labs(AbsPosition - minAbsPosition)<<fractionalBits;
+                        decelDistanceQx = labs(AbsPosition - minAbsPosition)<<fractionalBits;
+            //            Serial.print("<<< minPosnQ");
+            //            Serial.print(decelDistanceQx);
+            //            Serial.println(); 
+                    } else {
+            //            TargetPosnQx = MovePosnQx + decelDistanceQx;
+                        decelDistanceQx = decelAbsDistance<<fractionalBits;
+                    }
+                }
+                
+                Serial.print("decelDistanceQx ");
+                Serial.print(decelDistanceQx);
+                Serial.println();  
                
 //                Serial.print(" TargetPosnQx ");
 //                Serial.print(TargetPosnQx);
@@ -253,7 +281,7 @@ int ClearPathMotorSD::calcSteps()
 //                Serial.print(maxPosnQx);
 //                Serial.println();
                 
-                TargetPosnQx = MovePosnQx + decelDistanceQx;
+//                TargetPosnQx = MovePosnQx + decelDistanceQx;
                 
 //                if(_direction){
 //                    if(AbsPosition + (decelDistanceQx>>fractionalBits) > maxAbsPosition){
@@ -419,36 +447,9 @@ void ClearPathMotorSD::decelerateStopOverDistance(long _stopDist)
 //    stopDist = 800L*15;
 //    decelDistanceQx = _stopDist<<fractionalBits;
     
-
+    decelAbsDistance = _stopDist;
     
-    if(_direction){
-        if(AbsPosition + _stopDist > maxAbsPosition){
-//            TargetPosnQx = labs(maxAbsPosition - AbsPosition)<<fractionalBits;
-            decelDistanceQx = labs(maxAbsPosition - AbsPosition)<<fractionalBits;
-//            Serial.print(">>> maxPosnQx ");
-//            Serial.print(decelDistanceQx);
-//            Serial.println(); 
-        } else {
-//            TargetPosnQx = MovePosnQx + decelDistanceQx;
-            decelDistanceQx = _stopDist<<fractionalBits;
-        }
-    }
-    else{
-        if(AbsPosition - _stopDist < minAbsPosition){
-//            TargetPosnQx = labs(AbsPosition - minAbsPosition)<<fractionalBits;
-            decelDistanceQx = labs(AbsPosition - minAbsPosition)<<fractionalBits;
-//            Serial.print("<<< minPosnQ");
-//            Serial.print(decelDistanceQx);
-//            Serial.println(); 
-        } else {
-//            TargetPosnQx = MovePosnQx + decelDistanceQx;
-            decelDistanceQx = _stopDist<<fractionalBits;
-        }
-    }
-    
-    Serial.print("decelDistanceQx ");
-    Serial.print(decelDistanceQx);
-    Serial.println();  
+   
 //    _decelDistance = 5500000;
 //    AccLimitQx=(accelMax*(1<<fractionalBits))/4000000;
     moveStateX = 6;

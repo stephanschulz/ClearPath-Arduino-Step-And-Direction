@@ -120,6 +120,6 @@ private:
     uint8_t fractionalBits; //position amount removed every cycle
     
     long decelDistanceQx;
-    
+    long decelAbsDistance;
 };
 #endif
