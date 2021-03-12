@@ -81,6 +81,8 @@ public:
     void setPositionLimits(long _min, long _max);
     void decelerateStopOverDistance(long _stopDist);
     void decelerateStopWithAccel(long _accel);
+    void decelerateStopOverTime(long _timeMS);
+    
     void printInfo();
     boolean getDirection();
     
@@ -121,5 +123,7 @@ private:
     
     long decelDistanceQx;
     long decelAbsDistance;
+    long decelTime;
 };
+
 #endif

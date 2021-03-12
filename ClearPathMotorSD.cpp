@@ -267,6 +267,8 @@ int ClearPathMotorSD::calcSteps()
                     }
                 }
                 
+                TargetPosnQx = MovePosnQx + decelDistanceQx;
+                
                 Serial.print("decelDistanceQx ");
                 Serial.print(decelDistanceQx);
                 Serial.println();  
@@ -333,10 +335,76 @@ int ClearPathMotorSD::calcSteps()
                 
 //                TriangleMovePeakQx = MovePosnQx + (_decelDistance>>1); // don't really need to set this, since it's not used for ramp down
                 
-                moveStateX = 7;            //Start Phase 2; decelerate 
+                moveStateX = 9;            //Start Phase 2; decelerate 
             }
             break;
-        case 7:        //MARK:Phase 7, custom decel 2nd half of move
+            
+        case 7: //MARK: case 7, custom decelerate over set time
+            //decelerate
+
+            
+            if(_flag)        //wait for flag means wait for all already scheduled step PIN changes to be done
+            {
+                
+                //2kHZ = 2000 cycle/second
+                
+                //                distanceToEnd = TargetPosnQx - MovePosnQx;
+//                AccelRefQx =  -VelRefQx / decelTime ;
+//                AccelRefQx = min(-1,AccelRefQx);
+                
+                decelDistanceQx = ( (VelRefQx*VelRefQx) * (decelTime*decelTime) ); // >>1;
+                
+                Serial.print(" VelRefQx ");
+                Serial.print(VelRefQx);
+                Serial.print(" decelDistanceQx ");
+                Serial.print(decelDistanceQx);
+               
+                
+                if(decelDistanceQx < 2000){
+                    decelAbsDistance = 2000;
+                }else{
+                    decelAbsDistance = decelDistanceQx>>fractionalBits;
+                }
+                Serial.print(" decelAbsDistance ");
+                Serial.print(decelAbsDistance);
+                Serial.println(); 
+                
+//                int n = velMax/2000;
+//                if(n<51)
+//                    VelLimitQx=(velMax*(1<<fractionalBits))/2000;
+//                else
+//                    VelLimitQx=50*(1<<fractionalBits);
+                
+                moveStateX = 6;            //Start Phase 2; decelerate 
+            }
+            break; 
+            
+        case 8: //MARK: case 8, custom decelerate with specific accel
+            //decelerate
+            //just like case 2, but we right away jump in to the deceleration
+            //and at the end do not adjust MovePosnQx to TargetPosnQx
+            
+            if(_flag)        //wait for flag means wait for all already scheduled step PIN changes to be done
+            {
+            
+                MovePosnQx = MovePosnQx + VelRefQx + (AccelRefQx>>1); //position+speed+half accel
+                VelRefQx = VelRefQx + AccelRefQx; //in Phase 2 accel should be 0 since we pasted first half of 
+                
+//                AccelRefQx = -AccelRefQxS;
+                if((_TX > _TAUX) || (labs(MovePosnQx) > labs(TargetPosnQx)) || (VelRefQx*AccelRefQx > 0)) {
+                    AccelRefQx = 0;
+                    VelRefQx = 0;
+//                    MovePosnQx = TargetPosnQx;
+                    TargetPosnQx = MovePosnQx;
+                    moveStateX = 3;
+                    CommandX=0;
+                }
+                
+                
+            }
+            break; 
+            
+        case 9:        //MARK:Phase 9, custom decel 2nd half of move
             // Execute move
             MovePosnQx = MovePosnQx + VelRefQx + (AccelRefQx>>1); //position+speed+half accel
             VelRefQx = VelRefQx + AccelRefQx; //in Phase 2 accel should be 0 since we pasted first half of move
@@ -356,36 +424,10 @@ int ClearPathMotorSD::calcSteps()
             //constantly re-calculate distance to target and get updated AccelRefQx
             decelDistanceQx = TargetPosnQx - MovePosnQx;
             
-            if((_TX > _TAUX) || (labs(MovePosnQx) > labs(TargetPosnQx)) || labs(decelDistanceQx) <= 0 || (VelRefQx*AccelRefQx > 0)) {
+            //(labs(MovePosnQx) > labs(TargetPosnQx)) || 
+            if((_TX > _TAUX) || labs(decelDistanceQx) <= 0 || (VelRefQx*AccelRefQx > 0)) {
                 // If done, enforce final position.
-                    
-//                    Serial.print("_TX ");
-//                    Serial.print(TargetPosnQx);
-//                    Serial.print(" _TAUX ");
-//                    Serial.print(_TAUX);
-//                    Serial.print(" ? ");
-//                    Serial.print( (_TX > _TAUX) );
-//                    Serial.println(); 
-//                    
-//                    Serial.print("labs(MovePosnQx) ");
-//                    Serial.print(labs(MovePosnQx));
-//                    Serial.print(" labs(TargetPosnQx) ");
-//                    Serial.print(labs(TargetPosnQx));
-//                    Serial.print(" ? ");
-//                    Serial.print( (labs(MovePosnQx) > labs(TargetPosnQx)) );
-//                    Serial.println(); 
-//                Serial.print(" updated decelDistanceQx == ");
-//                Serial.print(decelDistanceQx);
-//                Serial.println();
-//                
-//                    Serial.print("VelRefQx ");
-//                    Serial.print(VelRefQx);
-//                    Serial.print(" AccelRefQx ");
-//                    Serial.print(AccelRefQx);
-//                    Serial.print(" ? ");
-//                    Serial.print( (VelRefQx*AccelRefQx > 0) );
-//                    Serial.println(); 
-//                    
+
                     AccelRefQx = 0;
                     VelRefQx = 0;
 //                    MovePosnQx = TargetPosnQx;
@@ -415,8 +457,32 @@ int ClearPathMotorSD::calcSteps()
 
 void ClearPathMotorSD::decelerateStopWithAccel(long _accel)
 {
+//    decelTime = 
+    AccelRefQx=(_accel*(1<<fractionalBits))/4000000;
+    AccelRefQx= -AccelRefQx;
+      //for example (20000 × (1<<10))/4000000 = 5.12
+
+    Serial.print("new AccelRefQx ");
+    Serial.print(AccelRefQx);
+    Serial.println();  
     
+    moveStateX = 8;
 }
+
+void ClearPathMotorSD::decelerateStopOverTime(long _timeMS)
+{
+    //TODO:not ready yet / not working
+    //1 sec = 1000ms
+    //ISR runs at 2khz = 2000 cylces/second
+    decelTime = _timeMS; //ms * 2 since we need to met 2000 cycles per 1 sec i.e. 1000ms
+    
+    Serial.print("new decelTime ");
+    Serial.print(decelTime);
+    Serial.println();  
+    
+    moveStateX = 7;
+}
+
 void ClearPathMotorSD::decelerateStopOverDistance(long _stopDist)
 {
     //TODO:make sure stopDist does not go beyond limits
@@ -449,6 +515,9 @@ void ClearPathMotorSD::decelerateStopOverDistance(long _stopDist)
     
     decelAbsDistance = _stopDist;
     
+    Serial.print("new decelAbsDistance ");
+    Serial.print(decelAbsDistance);
+    Serial.println();  
    
 //    _decelDistance = 5500000;
 //    AccLimitQx=(accelMax*(1<<fractionalBits))/4000000;
@@ -666,9 +735,9 @@ void ClearPathMotorSD::setMaxVel(long velMax)
 {
 	int n = velMax/2000;
 	if(n<51)
-		VelLimitQx=(velMax*(1<<fractionalBits))/2000;
+		VelLimitQx=(velMax*(1<<fractionalBits))/2000;// (40000 × (1<<10))/2000 = 20480
 	else
-		VelLimitQx=50*(1<<fractionalBits);
+		VelLimitQx=50*(1<<fractionalBits); //clamping. absolute max vel possible
 
 }
 /*		
