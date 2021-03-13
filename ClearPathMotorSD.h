@@ -82,7 +82,7 @@ public:
     void decelerateStopOverDistance(long _stopDist);
     void decelerateStopWithAccel(long _accel);
     void decelerateStopOverTime(long _timeMS);
-    
+    void moveWithSpeed(long _vel);
     void printInfo();
     boolean getDirection();
     

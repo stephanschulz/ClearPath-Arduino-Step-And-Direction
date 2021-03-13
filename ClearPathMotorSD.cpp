@@ -75,9 +75,11 @@ int ClearPathMotorSD::calcSteps()
             //or for shorter movementes we right away stat ramping down with decreasing speed
             
             //Start 0-------TX1--------TX2--------TX3-------TAUX End
-            //Start |rampUp----maxVel--Mid--maxVel----rampDown|         
+            //Start |rampUp----maxVel--Mid--maxVel----rampDown|    
+            
 		case 3: //MARK: IdleState state, executed only once.
 
+              
 			if(CommandX == 0) //If no/finished command/, do nothing set everything to 0
 			{
 				MovePosnQx=0;
@@ -89,6 +91,7 @@ int ClearPathMotorSD::calcSteps()
 				_TX3=0; // Beginning of ramp down time
                 //ramp up and ramp down should take same amount of time
 				_BurstX=0;
+//                Serial.println("case3-0");
 			}
 			else
 			{
@@ -108,6 +111,7 @@ int ClearPathMotorSD::calcSteps()
 					VelRefQx = 0;
 					MovePosnQx = TargetPosnQx;
 					moveStateX = 3;	//Set to Move Idle
+//                    Serial.println("case3-3");
 					CommandX=0;		//Zero command
 					break;
 				}
@@ -115,6 +119,7 @@ int ClearPathMotorSD::calcSteps()
 				MovePosnQx = MovePosnQx + VelRefQx;// + (AccelRefQx>>1);
 				VelRefQx = VelRefQx + AccelRefQx;
 				moveStateX = 1;
+//                Serial.println("case3-1");
 			}
 			break;
 
@@ -200,8 +205,8 @@ int ClearPathMotorSD::calcSteps()
 			// Execute move
 			TargetPosnQx = CommandX<<fractionalBits;
 				MovePosnQx = TargetPosnQx;
-			if(TargetPosnQx-MovePosnQx>50<<fractionalBits){
-				MovePosnQx=MovePosnQx+50<<fractionalBits;
+			if( (TargetPosnQx-MovePosnQx) > (50<<fractionalBits)){
+				MovePosnQx = MovePosnQx + (50<<fractionalBits);
 			}
 			else{
 				MovePosnQx = TargetPosnQx;
@@ -236,10 +241,7 @@ int ClearPathMotorSD::calcSteps()
 //                _TX3 = _TX; //reached ramp down time; start ramp down right away
 //                _TAUX = _TX<<1; //sets total time to a long time, so it will not be the cause for ramp down to finish
                 
-//                AccelRefQx = -AccLimitQx; // 10 
-//                if(moveStateX == 1) AccelRefQx = -15;    //Set deceleration if currently still in pahse 1
-                //otherwise AccelRefQx sign is already correct
-                
+//                           
                // _AX = 10; //2 * (_decelDistance - (_VX * 2)) / (2*2); //_AXMX;
                 
                 if(_direction){
@@ -272,66 +274,12 @@ int ClearPathMotorSD::calcSteps()
                 Serial.print("decelDistanceQx ");
                 Serial.print(decelDistanceQx);
                 Serial.println();  
-               
-//                Serial.print(" TargetPosnQx ");
-//                Serial.print(TargetPosnQx);
-//                Serial.print(" decelDistanceQx ");
-//                Serial.print(decelDistanceQx);
-////                Serial.print(" minPosnQx ");
-////                Serial.print(minPosnQx);
-//                Serial.print(" maxPosnQx ");
-//                Serial.print(maxPosnQx);
-//                Serial.println();
-                
-//                TargetPosnQx = MovePosnQx + decelDistanceQx;
-                
-//                if(_direction){
-//                    if(AbsPosition + (decelDistanceQx>>fractionalBits) > maxAbsPosition){
-//                        TargetPosnQx = labs(maxAbsPosition - AbsPosition)<<fractionalBits;
-//                        decelDistanceQx = labs(TargetPosnQx - MovePosnQx);
-//                        Serial.print(">>> maxPosnQx ");
-//                        Serial.print(decelDistanceQx);
-//                        Serial.println(); 
-//                    } else {
-//                        TargetPosnQx = MovePosnQx + decelDistanceQx;
-//                    }
-//                }
-//                else{
-//                    if(AbsPosition - (decelDistanceQx>>fractionalBits) < minAbsPosition){
-//                        TargetPosnQx = labs(AbsPosition - minAbsPosition)<<fractionalBits;
-//                        decelDistanceQx = labs(MovePosnQx - TargetPosnQx);
-//                        Serial.print("<<< minPosnQ");
-//                        Serial.print(decelDistanceQx);
-//                        Serial.println(); 
-//                    } else {
-//                        TargetPosnQx = MovePosnQx + decelDistanceQx;
-//                    }
-//                }
-                
-//              if(labs(TargetPosnQx) > maxPosnQx){
-//                    TargetPosnQx = maxPosnQx;
-//                    decelDistanceQx = labs(TargetPosnQx - MovePosnQx);
-//                    Serial.print(">>> maxPosnQx ");
-//                    Serial.print(decelDistanceQx);
-//                    Serial.println(); 
-//                } else if(labs(TargetPosnQx) < minPosnQx){
-//                    TargetPosnQx = minPosnQx;
-//                    decelDistanceQx = labs(MovePosnQx - TargetPosnQx);
-//                    Serial.print("<<< minPosnQ");
-//                    Serial.print(decelDistanceQx);
-//                    Serial.println(); 
-//                }
+
                 
                 //                distanceToEnd = TargetPosnQx - MovePosnQx;
                 AccelRefQx =  -(VelRefQx*VelRefQx) / (decelDistanceQx<<1) ;
                 AccelRefQx = min(-1,AccelRefQx);
-//                Serial.print("TargetPosnQx ");
-//                Serial.print(TargetPosnQx);
-//                Serial.print(" MovePosnQx ");
-//                Serial.print(MovePosnQx);
-//                Serial.print(" decelDistanceQx ");
-//                Serial.print(decelDistanceQx);
-//                Serial.println(); 
+
                 
 //                TriangleMovePeakQx = MovePosnQx + (_decelDistance>>1); // don't really need to set this, since it's not used for ramp down
                 
@@ -354,10 +302,10 @@ int ClearPathMotorSD::calcSteps()
                 
                 decelDistanceQx = ( (VelRefQx*VelRefQx) * (decelTime*decelTime) ); // >>1;
                 
-                Serial.print(" VelRefQx ");
-                Serial.print(VelRefQx);
-                Serial.print(" decelDistanceQx ");
-                Serial.print(decelDistanceQx);
+//                Serial.print(" VelRefQx ");
+//                Serial.print(VelRefQx);
+//                Serial.print(" decelDistanceQx ");
+//                Serial.print(decelDistanceQx);
                
                 
                 if(decelDistanceQx < 2000){
@@ -365,9 +313,9 @@ int ClearPathMotorSD::calcSteps()
                 }else{
                     decelAbsDistance = decelDistanceQx>>fractionalBits;
                 }
-                Serial.print(" decelAbsDistance ");
-                Serial.print(decelAbsDistance);
-                Serial.println(); 
+//                Serial.print(" decelAbsDistance ");
+//                Serial.print(decelAbsDistance);
+//                Serial.println(); 
                 
 //                int n = velMax/2000;
 //                if(n<51)
@@ -404,41 +352,136 @@ int ClearPathMotorSD::calcSteps()
             }
             break; 
             
-        case 9:        //MARK:Phase 9, custom decel 2nd half of move
+        case 9:        //MARK:Phase 9, custom decel 2nd half of move over fixed distance
             // Execute move
-            MovePosnQx = MovePosnQx + VelRefQx + (AccelRefQx>>1); //position+speed+half accel
-            VelRefQx = VelRefQx + AccelRefQx; //in Phase 2 accel should be 0 since we pasted first half of move
-
-            // Check time.
-//            if(_TX >= _TX3) {
+            
+            if(_flag)        //wait for flag means wait for all already scheduled step PIN changes to be done
+            {
+                MovePosnQx = MovePosnQx + VelRefQx + (AccelRefQx>>1); //position+speed+half accel
+                VelRefQx = VelRefQx + AccelRefQx; //in Phase 2 accel should be 0 since we pasted first half of move
+                
+                // Check time.
+                //            if(_TX >= _TX3) {
                 // If beyond TX3, wait for done condition.
                 // now we need to start ramping down
-//                AccelRefQx = -15;
+                //                AccelRefQx = -15;
                 //--for positions that never go in to negative (like linear actuator)
                 //we decrease speed and it eventually will be negative
                 //and accel is already negative
                 //so (VelRefQx*AccelRefQx > 0) means if both are negative; -1 * -1 = +1
                 //--for motors that can go in neg and pos direction
                 //we reach end of need for speed when vel and accel both have same sign
-            
-            //constantly re-calculate distance to target and get updated AccelRefQx
-            decelDistanceQx = TargetPosnQx - MovePosnQx;
-            
-            //(labs(MovePosnQx) > labs(TargetPosnQx)) || 
-            if((_TX > _TAUX) || labs(decelDistanceQx) <= 0 || (VelRefQx*AccelRefQx > 0)) {
-                // If done, enforce final position.
-
+                
+                //constantly re-calculate distance to target and get updated AccelRefQx
+                decelDistanceQx = TargetPosnQx - MovePosnQx;
+                
+                //(labs(MovePosnQx) > labs(TargetPosnQx)) || 
+                if((_TX > _TAUX) || labs(decelDistanceQx) <= 0 || (VelRefQx*AccelRefQx > 0)) {
+                    // If done, enforce final position.
+                    
                     AccelRefQx = 0;
                     VelRefQx = 0;
-//                    MovePosnQx = TargetPosnQx;
-                TargetPosnQx = MovePosnQx;
+                    //                    MovePosnQx = TargetPosnQx;
+                    TargetPosnQx = MovePosnQx;
                     moveStateX = 3;
                     CommandX=0;
-            }else{
-                AccelRefQx =  -(VelRefQx*VelRefQx) / (decelDistanceQx<<1) ;
-                AccelRefQx = min(-1,AccelRefQx);
+                }else{
+                    AccelRefQx =  -(VelRefQx*VelRefQx) / (decelDistanceQx<<1) ;
+                    AccelRefQx = min(-1,AccelRefQx);
+                }
             }
-//            }
+            break;
+            
+        case 10: //MARK: case 10
+            
+            if(_BurstX == 0){
+//            if(_flag)        //wait for flag means wait for all already scheduled step PIN changes to be done
+//            {
+  
+                
+//            _BurstX = (MovePosnQx - StepsSent)>>fractionalBits;
+            
+            if(_direction){
+                //                AbsPosition+=_BurstX;
+                if((AbsPosition+VelRefQx) >= maxAbsPosition){
+//                    AbsPosition-=_BurstX;
+                    Serial.print(" >= AbsPosition ");
+                    Serial.print(AbsPosition);
+                    Serial.println();  
+                    MovePosnQx = 0;
+                    StepsSent=0;
+                    moveStateX = 3;
+                    CommandX = 0;
+                }else{
+                    MovePosnQx = VelRefQx<<fractionalBits;
+                    StepsSent=0;
+                }
+            }else{
+                
+                if( (AbsPosition+VelRefQx) <= minAbsPosition ){
+                    Serial.print(" <= AbsPosition ");
+                    Serial.print(AbsPosition);
+                    Serial.println();  
+                    MovePosnQx = 0;
+                    StepsSent=0;
+                    moveStateX = 3;
+                    CommandX = 0;
+                }else{
+                    MovePosnQx = VelRefQx<<fractionalBits;
+                    StepsSent=0;
+                }
+                
+               
+            }
+//                if( (AbsPosition+VelRefQx) <= minAbsPosition || (AbsPosition+VelRefQx) >= maxAbsPosition){
+////                    Serial.print(" AbsPosition ");
+//                    Serial.print(AbsPosition);
+////                    Serial.println();  
+//                    MovePosnQx = 0;
+//                    StepsSent=0;
+//                    moveStateX = 11;
+//                    CommandX = 0;
+//                } else {
+//                    MovePosnQx = VelRefQx<<fractionalBits;
+//                    StepsSent=0;
+//                }
+                
+                
+                
+//                MovePosnQx = MovePosnQx + 40; 
+//                VelRefQx = VelRefQx + AccelRefQx; //in Phase 2 accel should be 0 since we pasted first half of 
+                //(labs(MovePosnQx) > labs(TargetPosnQx)) || 
+//                if(AbsPosition < minAbsPosition || AbsPosition > maxAbsPosition) {
+                    // If done, enforce final position.
+//                Serial.print(" AbsPosition ");
+//                    Serial.print(AbsPosition);
+//                    Serial.println();  
+                    
+//                Serial.print(".");
+//                    Serial.print("AbsPosition < minAbsPosition ");
+//                    Serial.print((AbsPosition < minAbsPosition));
+//                
+//                    Serial.println(); 
+//                    
+//                    Serial.print(" AbsPosition > maxAbsPosition ");
+//                    Serial.print((AbsPosition > maxAbsPosition));
+//                    Serial.println();  
+                    
+//                    AccelRefQx = 0;
+//                    VelRefQx = 0;
+                    //                    MovePosnQx = TargetPosnQx;
+//                    TargetPosnQx = MovePosnQx;
+//                    moveStateX = 3;
+//                    CommandX=0;
+//                }
+//            }else if(CommandX == 0){
+////                    MovePosnQx = VelRefQx<<fractionalBits;
+////                    StepsSent=0;
+////                    CommandX = 1;
+////                Serial.print("+");
+////                moveStateX = 10;
+            }
+            
             break;
 	}
 	// Compute burst value
@@ -487,32 +530,14 @@ void ClearPathMotorSD::decelerateStopOverDistance(long _stopDist)
 {
     //TODO:make sure stopDist does not go beyond limits
     //TODO: set maybe a deceleration AccLimitQx, but need to set back for normal move
-//    _decelDistance = stopDist;
-//    Serial.print("TargetPosnQx ");
-//    Serial.print(TargetPosnQx);
-//    Serial.print(", MovePosnQx ");
-//    Serial.print(MovePosnQx);
-//    Serial.print(", AccelRefQx ");
-//    Serial.print(AccelRefQx);
-//    Serial.println();  
-//    
-//    Serial.print("moveStateX ");
-//    Serial.print(moveStateX);
-//    Serial.println();  
-    
+
     Serial.print("AbsPosition ");
     Serial.print(AbsPosition);
     Serial.println();  
     
-//    if((MovePosnQx + _decelDistance) > (TargetPosnQx-MovePosnQx) ){ 
-//        _decelDistance = TargetPosnQx - MovePosnQx;
-//    }
-    
 //    TargetPosnQx
     //make move dist 800L * 68L
 //    stopDist = 800L*15;
-//    decelDistanceQx = _stopDist<<fractionalBits;
-    
     decelAbsDistance = _stopDist;
     
     Serial.print("new decelAbsDistance ");
@@ -523,6 +548,7 @@ void ClearPathMotorSD::decelerateStopOverDistance(long _stopDist)
 //    AccLimitQx=(accelMax*(1<<fractionalBits))/4000000;
     moveStateX = 6;
 }
+
 /*		
 	This is the default constructor.  This intializes the variables.
 */
@@ -657,6 +683,14 @@ boolean ClearPathMotorSD::move(long dist)
 {
   if(CommandX==0)
   {
+      Serial.print("move  CommandX==0 ");
+      Serial.print(moveStateX);
+      Serial.println();  
+      
+      Serial.print("PinA!=0");
+      Serial.print((PinA!=0));
+      Serial.println();  
+      
 	  if(dist<0)
 	  {
 		  if(PinA!=0)
@@ -678,15 +712,23 @@ boolean ClearPathMotorSD::move(long dist)
 			CommandX=dist;
 	  }
       
+      if(moveStateX == 10){
+          //in case we currently used moveSpeed and need to get out of it
+          moveStateX = 3;
+      }
+      
 //      Serial.print(", time: ");
 //      Serial.print(F(__TIME__));
 //      Serial.println();
       
       return true;
   }
-  else
+  else{
+      Serial.print("move  CommandX != 0 ");
+      Serial.print(moveStateX);
+      Serial.println();  
 	  return false;
-
+  }
 }
 
 /*		
@@ -727,6 +769,118 @@ boolean ClearPathMotorSD::moveFast(long dist)
 	  return false;
 
 }
+
+void ClearPathMotorSD::moveWithSpeed(long vel){
+    
+   
+   
+    Serial.print("moveStateX ");
+    Serial.print(moveStateX);
+    Serial.println();  
+    
+    if(vel<0)
+    {
+        if(PinA!=0)
+        {
+            digitalWrite(PinA,HIGH);
+            _direction=true;
+        }
+        cli();
+        
+//        MovePosnQx=0;
+//        VelRefQx=0;
+//        StepsSent=0;
+//        _TX=0;  // Current time
+//        _TX1=0; // End of ramp up time
+//        _TX2=0; // Beginning of phase 2 time
+//        _TX3=0; // Beginning of ramp down time
+//        //ramp up and ramp down should take same amount of time
+//        _BurstX=0;
+//    //                Serial.println("case3-0");
+//        TargetPosnQx = vel;
+    //    MovePosnQx = TargetPosnQx;
+        
+        moveStateX = 10;
+        CommandX = 0; //-vel;
+        VelRefQx = -vel;
+//        _BurstX = 1;
+        
+        sei();
+        
+    }
+    else
+    {
+        if(PinA!=0)
+        {
+            digitalWrite(PinA,LOW);
+            _direction=false;
+        }
+          cli();
+        
+//        MovePosnQx=0;
+//        VelRefQx=0;
+//        StepsSent=0;
+//        _TX=0;  // Current time
+//        _TX1=0; // End of ramp up time
+//        _TX2=0; // Beginning of phase 2 time
+//        _TX3=0; // Beginning of ramp down time
+//        //ramp up and ramp down should take same amount of time
+//        _BurstX=0;
+//    //                Serial.println("case3-0");
+//        TargetPosnQx = vel;
+    //    MovePosnQx = TargetPosnQx;
+        
+          moveStateX = 10;
+        CommandX = 0; //vel;
+          VelRefQx = vel;
+          sei();
+    }
+//    return true;
+//    VelRefQx =_vel;
+//    Serial.print("moveWithSpeed VelRefQx ");
+//    
+//    int n = _vel/2000;
+//    if(n<51)
+//        VelRefQx=(_vel*(1<<fractionalBits))/2000;// (40000 × (1<<10))/2000 = 20480
+//    else
+//        VelRefQx=50*(1<<fractionalBits); //clamping. absolute max vel possible
+
+//    VelRefQx = -40; //-VelRefQx;
+    
+//    moveFast(_vel);
+    
+    Serial.print("moveWithSpeed ");
+    Serial.println();  
+//    
+//   
+//    
+//    if(_vel<0)
+//    {
+//        if(PinA!=0)
+//        {
+//            digitalWrite(PinA,HIGH);
+//            delay(1);
+//            _direction=true;
+//        }
+////        CommandX=-dist;
+//        VelRefQx = -40;
+//    }
+//    else
+//    {
+//        if(PinA!=0)
+//        {
+//            digitalWrite(PinA,LOW);
+//            delay(1);
+//            _direction=false;
+//        }
+////          CommandX=dist;
+//        VelRefQx = 40;
+//    }
+//    
+//    moveStateX = 10;
+}
+
+
 /*		
 	This function sets the velocity in Counts/sec assuming the ISR frequency is 2kHz.
 	The maximum value for velMax is 100,000, the minimum is 2
